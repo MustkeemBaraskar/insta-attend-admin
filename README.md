@@ -1,8 +1,86 @@
-# Welcome to your Lovable project
+
+# Attendo - HR Management Dashboard
+
+A modern HR management dashboard with features for tracking employees, attendance, payroll, and leave management.
 
 ## Project info
 
 **URL**: https://lovable.dev/projects/f6887b14-eda4-45f3-be2b-027d63b3a556
+
+## Color Palette
+
+### Primary Colors
+- Primary Purple: `#9b87f5` (hsl: 255 82% 67%)
+- Dark Purple: `#6035cc`
+- Light Purple: `#e5deff`
+
+### Attendo Brand Colors
+```css
+--attendo-50: #f3f1fe
+--attendo-100: #e9e4fe
+--attendo-200: #d8cffe
+--attendo-300: #bbadfb
+--attendo-400: #9b87f5
+--attendo-500: #8262ef
+--attendo-600: #7246e1
+--attendo-700: #6035cc
+--attendo-800: #502ea7
+--attendo-900: #422886
+--attendo-950: #281855
+```
+
+### UI Colors
+- Background: `#f9fafb` (Light gray background)
+- Card Background: `#ffffff` (White)
+- Border Color: `#e5e7eb` (Light gray border)
+- Text Primary: `#111827` (Dark gray)
+- Text Secondary: `#6b7280` (Medium gray)
+- Success: `#10b981` (Green)
+- Warning: `#f59e0b` (Yellow)
+- Error: `#ef4444` (Red)
+- Info: `#3b82f6` (Blue)
+
+### Theme Colors
+```css
+--background: 0 0% 100%
+--foreground: 222.2 84% 4.9%
+--card: 0 0% 100%
+--card-foreground: 222.2 84% 4.9%
+--popover: 0 0% 100%
+--popover-foreground: 222.2 84% 4.9%
+--primary: 255 82% 67%
+--primary-foreground: 210 40% 98%
+--secondary: 210 40% 96.1%
+--secondary-foreground: 222.2 47.4% 11.2%
+--muted: 210 40% 96.1%
+--muted-foreground: 215.4 16.3% 46.9%
+--accent: 210 40% 96.1%
+--accent-foreground: 222.2 47.4% 11.2%
+--destructive: 0 84.2% 60.2%
+--destructive-foreground: 210 40% 98%
+--border: 214.3 31.8% 91.4%
+--input: 214.3 31.8% 91.4%
+--ring: 255 82% 67%
+```
+
+### Status Colors
+- Approved: Green (`bg-green-100 text-green-800 border-green-200`)
+- Pending: Yellow (`bg-yellow-100 text-yellow-800 border-yellow-200`) 
+- Rejected: Red (`bg-red-100 text-red-800 border-red-200`)
+
+## Fonts
+
+The application uses the default Tailwind CSS font stack:
+
+### Primary Font
+- **Sans-serif stack:** ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"
+
+### Font Sizes
+- Heading 1: `text-2xl` (24px)
+- Heading 2: `text-xl` (20px)
+- Body: `text-base` (16px)
+- Small: `text-sm` (14px)
+- Extra Small: `text-xs` (12px)
 
 ## How can I edit this code?
 
