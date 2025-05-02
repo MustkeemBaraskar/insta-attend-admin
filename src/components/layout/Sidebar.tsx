@@ -38,12 +38,12 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
       <div className="p-4 border-b flex items-center justify-between">
         {!collapsed && (
           <div className="flex items-center">
-            <span className="text-2xl font-bold text-attendo-500">Attendo</span>
+            <span className="text-2xl font-bold text-attendo-500">Insta Attend</span>
           </div>
         )}
         {collapsed && (
           <div className="flex items-center mx-auto">
-            <span className="text-2xl font-bold text-attendo-500">A</span>
+            <span className="text-2xl font-bold text-attendo-500">I</span>
           </div>
         )}
         <button

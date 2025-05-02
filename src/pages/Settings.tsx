@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -46,11 +45,11 @@ const departments = [
 ];
 
 const companyData = {
-  name: "Attendo Inc.",
+  name: "Insta Attend Inc.",
   address: "123 Business Avenue, Tech Park, CA 94103",
   phone: "+1 (555) 987-6543",
-  email: "info@attendo.com",
-  website: "www.attendo.com",
+  email: "info@insta-attend.com",
+  website: "www.insta-attend.com",
   taxId: "12-3456789",
 };
 
