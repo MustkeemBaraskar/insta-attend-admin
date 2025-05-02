@@ -82,6 +82,64 @@ The application uses the default Tailwind CSS font stack:
 - Small: `text-sm` (14px)
 - Extra Small: `text-xs` (12px)
 
+## API Documentation
+
+This section outlines the required APIs for the Attendo HR Management Dashboard. Backend developers should implement these endpoints to ensure the frontend functions correctly.
+
+### Base URL
+The API base URL should be configurable through the environment variable `VITE_API_URL`. Default: `http://localhost:3000/api`
+
+### Authentication API
+
+| Endpoint | Method | Description | Request Body | Response |
+|----------|--------|-------------|-------------|----------|
+| `/auth/login` | POST | Authenticate user | `{ email, password }` | `{ token, user: { id, name, email, role } }` |
+| `/auth/register` | POST | Register new user | `{ name, email, password, role }` | `{ token, user: { id, name, email, role } }` |
+| `/auth/forgot-password` | POST | Request password reset | `{ email }` | `{ message }` |
+| `/auth/reset-password` | POST | Reset password | `{ token, password }` | `{ message }` |
+
+### Employee API
+
+| Endpoint | Method | Description | Request Body | Response |
+|----------|--------|-------------|-------------|----------|
+| `/employees` | GET | Get all employees | - | `[{ id, name, email, phone, position, department, joinDate, status, avatar }]` |
+| `/employees/:id` | GET | Get employee by ID | - | `{ id, name, email, phone, position, department, joinDate, status, avatar }` |
+| `/employees` | POST | Create employee | Employee data without ID | Created employee with ID |
+| `/employees/:id` | PUT | Update employee | Updated fields | Updated employee |
+| `/employees/:id` | DELETE | Delete employee | - | - |
+
+### Attendance API
+
+| Endpoint | Method | Description | Request Body/Params | Response |
+|----------|--------|-------------|-------------|----------|
+| `/attendance` | GET | Get all attendance records | Query params: `startDate`, `endDate` | `[{ id, employeeId, employeeName, date, checkIn, checkOut, status, workingHours }]` |
+| `/attendance/employee/:id` | GET | Get attendance by employee | Query params: `startDate`, `endDate` | `[{ id, employeeId, employeeName, date, checkIn, checkOut, status, workingHours }]` |
+| `/attendance/check-in` | POST | Record check-in | `{ employeeId, latitude?, longitude? }` | Attendance record |
+| `/attendance/check-out` | POST | Record check-out | `{ employeeId, latitude?, longitude? }` | Updated attendance record |
+| `/attendance/reports` | GET | Get attendance reports | Query params: `startDate`, `endDate` | Attendance statistics and reports |
+
+### Leave Management API
+
+| Endpoint | Method | Description | Request Body/Params | Response |
+|----------|--------|-------------|-------------|----------|
+| `/leave` | GET | Get all leave requests | Query params: `status`, `startDate`, `endDate` | `[{ id, employeeId, employeeName, type, startDate, endDate, days, status, reason, appliedOn }]` |
+| `/leave/:id` | GET | Get leave request by ID | - | Leave request details |
+| `/leave` | POST | Create leave request | `{ employeeId, type, startDate, endDate, reason }` | Created leave request |
+| `/leave/:id` | PUT | Update leave request | Updated fields | Updated leave request |
+| `/leave/:id/approve` | POST | Approve leave request | `{ approvedBy }` | Updated leave request |
+| `/leave/:id/reject` | POST | Reject leave request | `{ rejectedBy, rejectedReason }` | Updated leave request |
+| `/leave/employee/:id` | GET | Get leaves by employee | Query params: `status` | Leave requests for employee |
+
+### Payroll API
+
+| Endpoint | Method | Description | Request Body/Params | Response |
+|----------|--------|-------------|-------------|----------|
+| `/payroll` | GET | Get all payrolls | Query params: `month`, `year`, `status` | `[{ id, employeeId, employeeName, month, year, baseSalary, bonuses, deductions, netSalary, paymentStatus, paymentDate }]` |
+| `/payroll/generate` | POST | Generate payroll | `{ month, year }` | Generated payroll records |
+| `/payroll/:id` | GET | Get payroll by ID | - | Payroll details |
+| `/payroll/employee/:id` | GET | Get payrolls by employee | Query params: `year` | Payroll records for employee |
+| `/payroll/:id/download` | GET | Download payslip | - | PDF file |
+
 ## How can I edit this code?
 
 There are several ways of editing your application.
