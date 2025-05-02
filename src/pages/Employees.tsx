@@ -1,5 +1,7 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,59 +15,91 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useToast } from "@/hooks/use-toast";
-
-// Mock data
-const employeesData = [
-  { id: 1, name: "John Doe", email: "john@example.com", phone: "555-123-4567", designation: "Software Developer", department: "Engineering" },
-  { id: 2, name: "Jane Smith", email: "jane@example.com", phone: "555-765-4321", designation: "HR Manager", department: "Human Resources" },
-  { id: 3, name: "Robert Johnson", email: "robert@example.com", phone: "555-222-3333", designation: "Project Manager", department: "Operations" },
-  { id: 4, name: "Emily Davis", email: "emily@example.com", phone: "555-444-5555", designation: "UX Designer", department: "Design" },
-  { id: 5, name: "Michael Wilson", email: "michael@example.com", phone: "555-666-7777", designation: "System Administrator", department: "IT" },
-  { id: 6, name: "Sarah Thompson", email: "sarah@example.com", phone: "555-888-9999", designation: "Marketing Specialist", department: "Marketing" },
-  { id: 7, name: "David Miller", email: "david@example.com", phone: "555-111-2222", designation: "Accountant", department: "Finance" },
-  { id: 8, name: "Lisa Brown", email: "lisa@example.com", phone: "555-333-4444", designation: "Content Writer", department: "Marketing" },
-  { id: 9, name: "James Wilson", email: "james@example.com", phone: "555-555-6666", designation: "QA Engineer", department: "Engineering" },
-  { id: 10, name: "Jennifer Lee", email: "jennifer@example.com", phone: "555-777-8888", designation: "Sales Representative", department: "Sales" },
-];
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { employeeService } from "@/api/services";
+import { Employee } from "@/api/repositories/employee.repository";
+import { EmployeeForm } from "@/components/employee/EmployeeForm";
+import { DeleteEmployeeDialog } from "@/components/employee/DeleteEmployeeDialog";
 
 const Employees = () => {
-  const [employees, setEmployees] = useState(employeesData);
   const [searchTerm, setSearchTerm] = useState("");
-  const { toast } = useToast();
+  const [departmentFilter, setDepartmentFilter] = useState<string | null>(null);
+  const [positionFilter, setPositionFilter] = useState<string | null>(null);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
 
-  const filteredEmployees = employees.filter(employee => 
-    employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.designation.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.department.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Fetch employees data
+  const { data: employees = [], refetch } = useQuery({
+    queryKey: ["employees"],
+    queryFn: employeeService.getAllEmployees,
+  });
 
-  const handleDelete = (id: number) => {
-    setEmployees(employees.filter(employee => employee.id !== id));
-    toast({
-      title: "Employee Deleted",
-      description: "Employee has been successfully removed.",
-    });
+  // Get unique departments and positions for filters
+  const departments = Array.from(new Set(employees.map(emp => emp.department)));
+  const positions = Array.from(new Set(employees.map(emp => emp.position)));
+
+  // Filter employees based on search term and filters
+  const filteredEmployees = employees.filter(employee => {
+    const matchesSearch = 
+      employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.department.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesDepartment = !departmentFilter || employee.department === departmentFilter;
+    const matchesPosition = !positionFilter || employee.position === positionFilter;
+    
+    return matchesSearch && matchesDepartment && matchesPosition;
+  });
+
+  const handleAddEmployee = () => {
+    setIsAddDialogOpen(true);
+  };
+
+  const handleEditEmployee = (employee: Employee) => {
+    setSelectedEmployee(employee);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDeleteEmployee = (employee: Employee) => {
+    setSelectedEmployee(employee);
+    setIsDeleteDialogOpen(true);
   };
 
   const handleExport = (type: string) => {
-    toast({
-      title: `Exporting ${type}`,
-      description: `Employees data will be exported as ${type}.`,
-    });
+    toast(`Exporting employees data as ${type}. This feature will be implemented soon.`);
+  };
+
+  const clearFilters = () => {
+    setDepartmentFilter(null);
+    setPositionFilter(null);
+    setSearchTerm("");
   };
 
   return (
     <MainLayout>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Employee Management</h1>
-        <Button className="bg-attendo-500 hover:bg-attendo-600">
+        <Button className="bg-attendo-500 hover:bg-attendo-600" onClick={handleAddEmployee}>
           <UserPlus className="h-4 w-4 mr-2" />
           Add New Employee
         </Button>
@@ -82,11 +116,60 @@ const Employees = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
-              <Filter className="h-4 w-4 mr-2" />
-              Filter
-            </Button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filter
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56">
+                <div className="p-2">
+                  <p className="text-sm font-medium mb-2">Department</p>
+                  <Select
+                    value={departmentFilter || ""}
+                    onValueChange={(value) => setDepartmentFilter(value || null)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">All Departments</SelectItem>
+                      {departments.map((dept) => (
+                        <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  <p className="text-sm font-medium mb-2 mt-4">Designation</p>
+                  <Select
+                    value={positionFilter || ""}
+                    onValueChange={(value) => setPositionFilter(value || null)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select designation" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">All Designations</SelectItem>
+                      {positions.map((pos) => (
+                        <SelectItem key={pos} value={pos}>{pos}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  <Button 
+                    variant="outline" 
+                    className="w-full mt-4" 
+                    size="sm"
+                    onClick={clearFilters}
+                  >
+                    Clear Filters
+                  </Button>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm">
@@ -115,6 +198,7 @@ const Employees = () => {
                 <TableHead>Phone</TableHead>
                 <TableHead>Designation</TableHead>
                 <TableHead>Department</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -125,17 +209,30 @@ const Employees = () => {
                     <TableCell className="font-medium">{employee.name}</TableCell>
                     <TableCell>{employee.email}</TableCell>
                     <TableCell>{employee.phone}</TableCell>
-                    <TableCell>{employee.designation}</TableCell>
+                    <TableCell>{employee.position}</TableCell>
                     <TableCell>{employee.department}</TableCell>
+                    <TableCell>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        employee.status === 'active' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {employee.status === 'active' ? 'Active' : 'Inactive'}
+                      </span>
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => handleEditEmployee(employee)}
+                        >
                           <Edit className="h-4 w-4 text-gray-500" />
                         </Button>
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          onClick={() => handleDelete(employee.id)}
+                          onClick={() => handleDeleteEmployee(employee)}
                           className="text-red-500 hover:text-red-600 hover:bg-red-50"
                         >
                           <Trash className="h-4 w-4" />
@@ -146,7 +243,7 @@ const Employees = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-6 text-gray-500">
+                  <TableCell colSpan={7} className="text-center py-6 text-gray-500">
                     No employees found
                   </TableCell>
                 </TableRow>
@@ -155,6 +252,57 @@ const Employees = () => {
           </Table>
         </div>
       </div>
+
+      {/* Add Employee Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Add New Employee</DialogTitle>
+          </DialogHeader>
+          <EmployeeForm 
+            onSuccess={() => {
+              setIsAddDialogOpen(false);
+              refetch();
+              toast("Employee added successfully");
+            }}
+            onCancel={() => setIsAddDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Employee Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Edit Employee</DialogTitle>
+          </DialogHeader>
+          {selectedEmployee && (
+            <EmployeeForm 
+              employee={selectedEmployee}
+              onSuccess={() => {
+                setIsEditDialogOpen(false);
+                refetch();
+                toast("Employee updated successfully");
+              }}
+              onCancel={() => setIsEditDialogOpen(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      {selectedEmployee && (
+        <DeleteEmployeeDialog
+          employeeId={selectedEmployee.id}
+          employeeName={selectedEmployee.name}
+          isOpen={isDeleteDialogOpen}
+          onClose={() => setIsDeleteDialogOpen(false)}
+          onSuccess={() => {
+            setIsDeleteDialogOpen(false);
+            refetch();
+          }}
+        />
+      )}
     </MainLayout>
   );
 };

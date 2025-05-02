@@ -12,6 +12,8 @@ export interface Employee {
   joinDate: string;
   status: 'active' | 'inactive';
   avatar?: string;
+  geofencing?: boolean;
+  deletePermission?: boolean;
 }
 
 export const employeeRepository = {
@@ -35,4 +37,3 @@ export const employeeRepository = {
     return apiClient.delete<void>(apiUrl.employees.delete(id));
   },
 };
-
