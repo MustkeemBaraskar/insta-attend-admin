@@ -2,13 +2,40 @@
 import { authRepository } from '../repositories/auth.repository';
 import { toast } from 'sonner';
 
+// Mock user data for testing
+const MOCK_USER = {
+  id: "1",
+  name: "Admin User",
+  email: "admin@insta-attend.com",
+  role: "Administrator"
+};
+
+// Mock credentials for testing
+const VALID_CREDENTIALS = {
+  email: "admin@insta-attend.com",
+  password: "password123"
+};
+
 export const authService = {
   login: async (email: string, password: string) => {
     try {
-      const response = await authRepository.login({ email, password });
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
-      return response.data;
+      // For mock testing, check if credentials match
+      if (email === VALID_CREDENTIALS.email && password === VALID_CREDENTIALS.password) {
+        // Mock successful login
+        const mockResponse = {
+          token: "mock-jwt-token-for-testing",
+          user: MOCK_USER
+        };
+        
+        // Store token and user in localStorage
+        localStorage.setItem('token', mockResponse.token);
+        localStorage.setItem('user', JSON.stringify(mockResponse.user));
+        
+        return mockResponse;
+      } else {
+        // Mock failed login
+        throw new Error("Invalid credentials");
+      }
     } catch (error) {
       toast.error('Login failed. Please check your credentials.');
       throw error;
@@ -17,9 +44,12 @@ export const authService = {
   
   register: async (name: string, email: string, password: string, role: string) => {
     try {
-      const response = await authRepository.register({ name, email, password, role });
+      // Mock registration success
       toast.success('Registration successful!');
-      return response.data;
+      return {
+        token: "mock-jwt-token-for-testing",
+        user: { id: "2", name, email, role }
+      };
     } catch (error) {
       toast.error('Registration failed. Please try again.');
       throw error;
@@ -28,9 +58,9 @@ export const authService = {
   
   forgotPassword: async (email: string) => {
     try {
-      const response = await authRepository.forgotPassword({ email });
+      // Mock forgot password success
       toast.success('Password reset email sent. Please check your inbox.');
-      return response.data;
+      return { message: "Password reset email sent" };
     } catch (error) {
       toast.error('Failed to send password reset email. Please try again.');
       throw error;
@@ -39,9 +69,9 @@ export const authService = {
   
   resetPassword: async (token: string, password: string) => {
     try {
-      const response = await authRepository.resetPassword({ token, password });
+      // Mock reset password success
       toast.success('Password reset successful. Please login with your new password.');
-      return response.data;
+      return { message: "Password reset successful" };
     } catch (error) {
       toast.error('Failed to reset password. Please try again.');
       throw error;
@@ -65,4 +95,3 @@ export const authService = {
     return !!localStorage.getItem('token');
   }
 };
-
