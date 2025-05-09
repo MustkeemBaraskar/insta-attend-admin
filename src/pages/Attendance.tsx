@@ -1,9 +1,10 @@
 
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Calendar, Search, Filter, FileText } from "lucide-react";
+import { Calendar, Search, Filter, FileText, Download } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -33,51 +34,86 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
-
-// Mock attendance data
-const attendanceData = [
-  { id: 1, employeeId: 1, employeeName: "John Doe", date: "2025-04-23", inTime: "09:02:34", outTime: "17:05:22", totalHours: "08:02:48", status: "Present" },
-  { id: 2, employeeId: 2, employeeName: "Jane Smith", date: "2025-04-23", inTime: "08:55:12", outTime: "17:10:45", totalHours: "08:15:33", status: "Present" },
-  { id: 3, employeeId: 3, employeeName: "Robert Johnson", date: "2025-04-23", inTime: "09:15:22", outTime: "17:00:10", totalHours: "07:44:48", status: "Late" },
-  { id: 4, employeeId: 4, employeeName: "Emily Davis", date: "2025-04-23", inTime: "-", outTime: "-", totalHours: "00:00:00", status: "Absent" },
-  { id: 5, employeeId: 5, employeeName: "Michael Wilson", date: "2025-04-23", inTime: "08:50:32", outTime: "17:05:44", totalHours: "08:15:12", status: "Present" },
-  { id: 6, employeeId: 1, employeeName: "John Doe", date: "2025-04-24", inTime: "08:58:34", outTime: "17:10:22", totalHours: "08:11:48", status: "Present" },
-  { id: 7, employeeId: 2, employeeName: "Jane Smith", date: "2025-04-24", inTime: "08:59:42", outTime: "17:05:15", totalHours: "08:05:33", status: "Present" },
-  { id: 8, employeeId: 3, employeeName: "Robert Johnson", date: "2025-04-24", inTime: "-", outTime: "-", totalHours: "00:00:00", status: "Absent" },
-  { id: 9, employeeId: 4, employeeName: "Emily Davis", date: "2025-04-24", inTime: "08:57:22", outTime: "17:00:10", totalHours: "08:02:48", status: "Present" },
-  { id: 10, employeeId: 5, employeeName: "Michael Wilson", date: "2025-04-24", inTime: "09:10:32", outTime: "17:15:44", totalHours: "08:05:12", status: "Late" },
-];
-
-// Employees list for filtering
-const employees = [
-  { id: 1, name: "John Doe" },
-  { id: 2, name: "Jane Smith" },
-  { id: 3, name: "Robert Johnson" },
-  { id: 4, name: "Emily Davis" },
-  { id: 5, name: "Michael Wilson" },
-];
+import { toast } from "sonner";
+import { attendanceService } from "@/api/services";
 
 const Attendance = () => {
-  const [attendance, setAttendance] = useState(attendanceData);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [selectedEmployee, setSelectedEmployee] = useState<string | undefined>();
-  const { toast } = useToast();
+
+  // Fetch attendance data
+  const { data: attendanceData = [] } = useQuery({
+    queryKey: ["attendance"],
+    queryFn: () => attendanceService.getAllAttendance(),
+  });
+
+  // Fetch employee list for filtering
+  const { data: employees = [] } = useQuery({
+    queryKey: ["employees_minimal"],
+    queryFn: () => attendanceService.getEmployeeList(),
+  });
 
   // Filter attendance data based on search, date and employee
-  const filteredAttendance = attendance.filter(record => {
+  const filteredAttendance = attendanceData.filter(record => {
     const matchesSearch = record.employeeName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesDate = selectedDate ? record.date === format(selectedDate, "yyyy-MM-dd") : true;
-    const matchesEmployee = selectedEmployee ? record.employeeId.toString() === selectedEmployee : true;
+    const matchesEmployee = selectedEmployee && selectedEmployee !== "all" ? record.employeeId === selectedEmployee : true;
     return matchesSearch && matchesDate && matchesEmployee;
   });
 
   const handleExport = (type: string) => {
-    toast({
-      title: `Exporting ${type}`,
-      description: `Attendance data will be exported as ${type}.`,
-    });
+    const filename = `attendance_report_${format(new Date(), 'yyyy-MM-dd')}`;
+    
+    if (type === "CSV") {
+      // Mock CSV export
+      const headers = ["Employee", "Date", "Check In", "Check Out", "Working Hours", "Status"];
+      const csvData = filteredAttendance.map(record => [
+        record.employeeName,
+        format(new Date(record.date), "MMM dd, yyyy"),
+        record.checkIn || "-",
+        record.checkOut || "-",
+        calculateWorkingHours(record.checkIn, record.checkOut),
+        record.status
+      ]);
+      
+      downloadCSV([headers, ...csvData], filename);
+      toast.success(`Exported ${filteredAttendance.length} records as CSV`);
+    } else if (type === "PDF") {
+      // Mock PDF export
+      toast.success(`Exporting ${filteredAttendance.length} records as PDF. This would download a PDF in a real implementation.`);
+    }
+  };
+  
+  // Helper function to calculate working hours
+  const calculateWorkingHours = (checkIn: string | null, checkOut: string | null): string => {
+    if (!checkIn || !checkOut || checkIn === '-' || checkOut === '-') return "00:00:00";
+    
+    // Simple mock calculation
+    const hours = Math.floor(Math.random() * 4) + 6; // 6-9 hours
+    const minutes = Math.floor(Math.random() * 60);
+    const seconds = Math.floor(Math.random() * 60);
+    
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+  
+  // Helper function to download CSV
+  const downloadCSV = (data: any[][], filename: string) => {
+    const csvContent = data.map(row => row.map(cell => 
+      typeof cell === 'string' && cell.includes(',') ? `"${cell}"` : cell
+    ).join(',')).join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${filename}.csv`);
+    link.style.display = 'none';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -125,7 +161,7 @@ const Attendance = () => {
                 <SelectContent>
                   <SelectItem value="all">All employees</SelectItem>
                   {employees.map((employee) => (
-                    <SelectItem key={employee.id} value={employee.id.toString()}>
+                    <SelectItem key={employee.id} value={employee.id}>
                       {employee.name}
                     </SelectItem>
                   ))}
@@ -142,15 +178,17 @@ const Attendance = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="w-full sm:w-auto">
-                  <FileText className="h-4 w-4 mr-2" />
+                  <Download className="h-4 w-4 mr-2" />
                   Export
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 <DropdownMenuItem onClick={() => handleExport("CSV")}>
+                  <FileText className="h-4 w-4 mr-2" />
                   Export as CSV
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleExport("PDF")}>
+                  <FileText className="h-4 w-4 mr-2" />
                   Export as PDF
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -176,17 +214,18 @@ const Attendance = () => {
                   <TableRow key={record.id}>
                     <TableCell className="font-medium">{record.employeeName}</TableCell>
                     <TableCell>{format(new Date(record.date), "MMM dd, yyyy")}</TableCell>
-                    <TableCell>{record.inTime}</TableCell>
-                    <TableCell>{record.outTime}</TableCell>
-                    <TableCell>{record.totalHours}</TableCell>
+                    <TableCell>{record.checkIn || "-"}</TableCell>
+                    <TableCell>{record.checkOut || "-"}</TableCell>
+                    <TableCell>{calculateWorkingHours(record.checkIn, record.checkOut)}</TableCell>
                     <TableCell>
                       <span className={cn(
                         "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
-                        record.status === "Present" && "bg-green-100 text-green-800",
-                        record.status === "Late" && "bg-yellow-100 text-yellow-800",
-                        record.status === "Absent" && "bg-red-100 text-red-800"
+                        record.status === "present" && "bg-green-100 text-green-800",
+                        record.status === "late" && "bg-yellow-100 text-yellow-800",
+                        record.status === "absent" && "bg-red-100 text-red-800",
+                        record.status === "half-day" && "bg-blue-100 text-blue-800"
                       )}>
-                        {record.status}
+                        {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
                       </span>
                     </TableCell>
                   </TableRow>

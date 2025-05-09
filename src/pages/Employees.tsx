@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, UserPlus, Edit, Trash, Filter, FileText } from "lucide-react";
+import { Search, UserPlus, Edit, Trash, Filter, Download, FileText } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -85,7 +86,45 @@ const Employees = () => {
   };
 
   const handleExport = (type: string) => {
-    toast(`Exporting employees data as ${type}. This feature will be implemented soon.`);
+    const filename = `employees_data_${new Date().toISOString().split('T')[0]}`;
+    
+    if (type === "CSV") {
+      // Mock CSV export
+      const headers = ["Name", "Email", "Phone", "Position", "Department", "Status"];
+      const csvData = filteredEmployees.map(employee => [
+        employee.name,
+        employee.email,
+        employee.phone,
+        employee.position,
+        employee.department,
+        employee.status
+      ]);
+      
+      downloadCSV([headers, ...csvData], filename);
+      toast.success(`Exported ${filteredEmployees.length} employees as CSV`);
+    } else if (type === "PDF") {
+      // Mock PDF export
+      toast.success(`Exporting ${filteredEmployees.length} employees as PDF. This would download a PDF in a real implementation.`);
+    }
+  };
+
+  // Helper function to download CSV
+  const downloadCSV = (data: any[][], filename: string) => {
+    const csvContent = data.map(row => row.map(cell => 
+      typeof cell === 'string' && cell.includes(',') ? `"${cell}"` : cell
+    ).join(',')).join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${filename}.csv`);
+    link.style.display = 'none';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const clearFilters = () => {
@@ -172,15 +211,17 @@ const Employees = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm">
-                  <FileText className="h-4 w-4 mr-2" />
+                  <Download className="h-4 w-4 mr-2" />
                   Export
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 <DropdownMenuItem onClick={() => handleExport("CSV")}>
+                  <FileText className="h-4 w-4 mr-2" />
                   Export as CSV
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleExport("PDF")}>
+                  <FileText className="h-4 w-4 mr-2" />
                   Export as PDF
                 </DropdownMenuItem>
               </DropdownMenuContent>
