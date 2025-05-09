@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Calendar, Search, Filter, FileText, Download } from "lucide-react";
+import { Calendar, Search, Filter, FileText, Download, User, Briefcase, CalendarDays, Clock, MapPin } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -40,7 +40,7 @@ import { attendanceService } from "@/api/services";
 const Attendance = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [selectedEmployee, setSelectedEmployee] = useState<string | undefined>();
+  const [selectedEmployee, setSelectedEmployee] = useState<string | undefined>("all");
 
   // Fetch attendance data
   const { data: attendanceData = [] } = useQuery({
@@ -56,7 +56,9 @@ const Attendance = () => {
 
   // Filter attendance data based on search, date and employee
   const filteredAttendance = attendanceData.filter(record => {
-    const matchesSearch = record.employeeName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = record.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                         record.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         record.designation.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesDate = selectedDate ? record.date === format(selectedDate, "yyyy-MM-dd") : true;
     const matchesEmployee = selectedEmployee && selectedEmployee !== "all" ? record.employeeId === selectedEmployee : true;
     return matchesSearch && matchesDate && matchesEmployee;
@@ -67,13 +69,22 @@ const Attendance = () => {
     
     if (type === "CSV") {
       // Mock CSV export
-      const headers = ["Employee", "Date", "Check In", "Check Out", "Working Hours", "Status"];
+      const headers = [
+        "Employee", "Department", "Designation", "Date", 
+        "In Time", "In Location", "Out Time", "Out Location", 
+        "Working Hours", "Status"
+      ];
+      
       const csvData = filteredAttendance.map(record => [
         record.employeeName,
+        record.department,
+        record.designation,
         format(new Date(record.date), "MMM dd, yyyy"),
         record.checkIn || "-",
+        record.inLocation || "-",
         record.checkOut || "-",
-        calculateWorkingHours(record.checkIn, record.checkOut),
+        record.outLocation || "-",
+        record.workingHours || "00:00:00",
         record.status
       ]);
       
@@ -83,18 +94,6 @@ const Attendance = () => {
       // Mock PDF export
       toast.success(`Exporting ${filteredAttendance.length} records as PDF. This would download a PDF in a real implementation.`);
     }
-  };
-  
-  // Helper function to calculate working hours
-  const calculateWorkingHours = (checkIn: string | null, checkOut: string | null): string => {
-    if (!checkIn || !checkOut || checkIn === '-' || checkOut === '-') return "00:00:00";
-    
-    // Simple mock calculation
-    const hours = Math.floor(Math.random() * 4) + 6; // 6-9 hours
-    const minutes = Math.floor(Math.random() * 60);
-    const seconds = Math.floor(Math.random() * 60);
-    
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
   
   // Helper function to download CSV
@@ -129,7 +128,7 @@ const Attendance = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
                 className="pl-10"
-                placeholder="Search by name..."
+                placeholder="Search by name, department, designation..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -200,11 +199,15 @@ const Attendance = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Employee</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>In Time</TableHead>
-                <TableHead>Out Time</TableHead>
-                <TableHead>Working Hours</TableHead>
+                <TableHead><div className="flex items-center gap-1"><User className="h-4 w-4" /> Employee</div></TableHead>
+                <TableHead><div className="flex items-center gap-1"><Briefcase className="h-4 w-4" /> Department</div></TableHead>
+                <TableHead><div className="flex items-center gap-1"><Briefcase className="h-4 w-4" /> Designation</div></TableHead>
+                <TableHead><div className="flex items-center gap-1"><CalendarDays className="h-4 w-4" /> Date</div></TableHead>
+                <TableHead><div className="flex items-center gap-1"><Clock className="h-4 w-4" /> In Time</div></TableHead>
+                <TableHead><div className="flex items-center gap-1"><MapPin className="h-4 w-4" /> In Location</div></TableHead>
+                <TableHead><div className="flex items-center gap-1"><Clock className="h-4 w-4" /> Out Time</div></TableHead>
+                <TableHead><div className="flex items-center gap-1"><MapPin className="h-4 w-4" /> Out Location</div></TableHead>
+                <TableHead><div className="flex items-center gap-1"><Clock className="h-4 w-4" /> Working Hours</div></TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
@@ -213,10 +216,14 @@ const Attendance = () => {
                 filteredAttendance.map((record) => (
                   <TableRow key={record.id}>
                     <TableCell className="font-medium">{record.employeeName}</TableCell>
+                    <TableCell>{record.department}</TableCell>
+                    <TableCell>{record.designation}</TableCell>
                     <TableCell>{format(new Date(record.date), "MMM dd, yyyy")}</TableCell>
                     <TableCell>{record.checkIn || "-"}</TableCell>
+                    <TableCell>{record.inLocation || "-"}</TableCell>
                     <TableCell>{record.checkOut || "-"}</TableCell>
-                    <TableCell>{calculateWorkingHours(record.checkIn, record.checkOut)}</TableCell>
+                    <TableCell>{record.outLocation || "-"}</TableCell>
+                    <TableCell>{record.workingHours || "00:00:00"}</TableCell>
                     <TableCell>
                       <span className={cn(
                         "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
@@ -232,7 +239,7 @@ const Attendance = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-6 text-gray-500">
+                  <TableCell colSpan={10} className="text-center py-6 text-gray-500">
                     No attendance records found
                   </TableCell>
                 </TableRow>

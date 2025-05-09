@@ -6,11 +6,15 @@ export interface Attendance {
   id: string;
   employeeId: string;
   employeeName: string;
+  department: string;
+  designation: string;
   date: string;
-  checkIn: string;
+  checkIn: string | null;
+  inLocation: string | null;
   checkOut: string | null;
+  outLocation: string | null;
   status: 'present' | 'absent' | 'late' | 'half-day';
-  workingHours?: number;
+  workingHours?: string;
 }
 
 export interface CheckInRequest {
