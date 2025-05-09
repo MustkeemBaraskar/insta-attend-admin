@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Calendar, Search, Filter, FileText, Download, User, Briefcase, CalendarDays, Clock, MapPin } from "lucide-react";
+import { Calendar, Search, Filter, FileText, Download } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -199,15 +199,15 @@ const Attendance = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead><div className="flex items-center gap-1"><User className="h-4 w-4" /> Employee</div></TableHead>
-                <TableHead><div className="flex items-center gap-1"><Briefcase className="h-4 w-4" /> Department</div></TableHead>
-                <TableHead><div className="flex items-center gap-1"><Briefcase className="h-4 w-4" /> Designation</div></TableHead>
-                <TableHead><div className="flex items-center gap-1"><CalendarDays className="h-4 w-4" /> Date</div></TableHead>
-                <TableHead><div className="flex items-center gap-1"><Clock className="h-4 w-4" /> In Time</div></TableHead>
-                <TableHead><div className="flex items-center gap-1"><MapPin className="h-4 w-4" /> In Location</div></TableHead>
-                <TableHead><div className="flex items-center gap-1"><Clock className="h-4 w-4" /> Out Time</div></TableHead>
-                <TableHead><div className="flex items-center gap-1"><MapPin className="h-4 w-4" /> Out Location</div></TableHead>
-                <TableHead><div className="flex items-center gap-1"><Clock className="h-4 w-4" /> Working Hours</div></TableHead>
+                <TableHead>Employee</TableHead>
+                <TableHead>Department</TableHead>
+                <TableHead>Designation</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>In Time</TableHead>
+                <TableHead>In Location</TableHead>
+                <TableHead>Out Time</TableHead>
+                <TableHead>Out Location</TableHead>
+                <TableHead>Working Hours</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
