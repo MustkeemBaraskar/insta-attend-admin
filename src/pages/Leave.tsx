@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -233,7 +232,7 @@ const Leave = () => {
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Status</SelectItem>
+                <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="Approved">Approved</SelectItem>
                 <SelectItem value="Pending">Pending</SelectItem>
                 <SelectItem value="Rejected">Rejected</SelectItem>
@@ -245,7 +244,7 @@ const Leave = () => {
                 <SelectValue placeholder="All Types" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Types</SelectItem>
+                <SelectItem value="all">All Types</SelectItem>
                 <SelectItem value="Sick Leave">Sick Leave</SelectItem>
                 <SelectItem value="Vacation">Vacation</SelectItem>
                 <SelectItem value="Personal Leave">Personal Leave</SelectItem>

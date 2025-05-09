@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -128,14 +127,14 @@ const Employees = () => {
                 <div className="p-2">
                   <p className="text-sm font-medium mb-2">Department</p>
                   <Select
-                    value={departmentFilter || ""}
-                    onValueChange={(value) => setDepartmentFilter(value || null)}
+                    value={departmentFilter || "all"}
+                    onValueChange={(value) => setDepartmentFilter(value === "all" ? null : value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select department" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Departments</SelectItem>
+                      <SelectItem value="all">All Departments</SelectItem>
                       {departments.map((dept) => (
                         <SelectItem key={dept} value={dept}>{dept}</SelectItem>
                       ))}
@@ -144,14 +143,14 @@ const Employees = () => {
                   
                   <p className="text-sm font-medium mb-2 mt-4">Designation</p>
                   <Select
-                    value={positionFilter || ""}
-                    onValueChange={(value) => setPositionFilter(value || null)}
+                    value={positionFilter || "all"}
+                    onValueChange={(value) => setPositionFilter(value === "all" ? null : value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select designation" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Designations</SelectItem>
+                      <SelectItem value="all">All Designations</SelectItem>
                       {positions.map((pos) => (
                         <SelectItem key={pos} value={pos}>{pos}</SelectItem>
                       ))}
