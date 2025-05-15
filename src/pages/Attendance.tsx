@@ -1,10 +1,9 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Calendar, Search, Filter, FileText, Download } from "lucide-react";
+import { Search, Filter, FileText, Download } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -14,12 +13,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { format } from "date-fns";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import {
   Select,
   SelectContent,
@@ -36,12 +29,28 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { attendanceService } from "@/api/services";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { DateRange } from "react-day-picker";
+import { ExportDialog, ExportFilters } from "@/components/common/ExportDialog";
+import { exportToExcel, formatDateRange } from "@/lib/export-utils";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+
+const ITEMS_PER_PAGE = 10;
 
 const Attendance = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [selectedEmployee, setSelectedEmployee] = useState<string | undefined>("all");
-
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  
   // Fetch attendance data
   const { data: attendanceData = [] } = useQuery({
     queryKey: ["attendance"],
@@ -54,17 +63,91 @@ const Attendance = () => {
     queryFn: () => attendanceService.getEmployeeList(),
   });
 
-  // Filter attendance data based on search, date and employee
-  const filteredAttendance = attendanceData.filter(record => {
-    const matchesSearch = record.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         record.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         record.designation.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDate = selectedDate ? record.date === format(selectedDate, "yyyy-MM-dd") : true;
-    const matchesEmployee = selectedEmployee && selectedEmployee !== "all" ? record.employeeId === selectedEmployee : true;
-    return matchesSearch && matchesDate && matchesEmployee;
+  // Get unique departments and designations for export filters
+  const departments = Array.from(
+    new Set(attendanceData.map((record) => record.department))
+  );
+  
+  const designations = Array.from(
+    new Set(attendanceData.map((record) => record.designation))
+  );
+
+  // Filter attendance data based on search, date range and employee
+  const filteredAttendance = attendanceData.filter((record) => {
+    const matchesSearch =
+      record.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      record.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      record.designation.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesDateRange = dateRange
+      ? (!dateRange.from || new Date(record.date) >= dateRange.from) && 
+        (!dateRange.to || new Date(record.date) <= dateRange.to)
+      : true;
+      
+    const matchesEmployee =
+      selectedEmployee && selectedEmployee !== "all"
+        ? record.employeeId === selectedEmployee
+        : true;
+    
+    return matchesSearch && matchesDateRange && matchesEmployee;
   });
 
-  const handleExport = (type: string) => {
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filteredAttendance.length / ITEMS_PER_PAGE));
+  const paginatedAttendance = filteredAttendance.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  const handleExport = (filters: ExportFilters) => {
+    // Filter data according to export filters
+    const dataToExport = attendanceData.filter((record) => {
+      const matchesDateRange = filters.dateRange
+        ? (!filters.dateRange.from || new Date(record.date) >= filters.dateRange.from) && 
+          (!filters.dateRange.to || new Date(record.date) <= filters.dateRange.to)
+        : true;
+        
+      const matchesDepartment = filters.department
+        ? record.department === filters.department
+        : true;
+        
+      const matchesDesignation = filters.designation
+        ? record.designation === filters.designation
+        : true;
+      
+      return matchesDateRange && matchesDepartment && matchesDesignation;
+    });
+
+    // Define headers and row mapping for Excel export
+    const headers = [
+      "Employee", "Department", "Designation", "Date", 
+      "In Time", "In Location", "Out Time", "Out Location", 
+      "Working Hours", "Status"
+    ];
+    
+    const rowMapper = (record: typeof attendanceData[0]) => [
+      record.employeeName,
+      record.department,
+      record.designation,
+      format(new Date(record.date), "MMM dd, yyyy"),
+      record.checkIn || "-",
+      record.inLocation || "-",
+      record.checkOut || "-",
+      record.outLocation || "-",
+      record.workingHours || "00:00:00",
+      record.status.charAt(0).toUpperCase() + record.status.slice(1)
+    ];
+
+    // Generate filename with date range
+    const dateInfo = formatDateRange(filters.dateRange);
+    const filename = `attendance_report_${dateInfo}`;
+    
+    // Export to Excel
+    exportToExcel(dataToExport, headers, rowMapper, filename);
+  };
+
+  // Legacy CSV export (keeping for backward compatibility)
+  const handleLegacyExport = (type: string) => {
     const filename = `attendance_report_${format(new Date(), 'yyyy-MM-dd')}`;
     
     if (type === "CSV") {
@@ -135,23 +218,11 @@ const Attendance = () => {
             </div>
             
             <div className="flex w-full sm:w-auto items-center gap-3">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="justify-start w-full sm:w-[200px]">
-                    <Calendar className="mr-2 h-4 w-4" />
-                    {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <CalendarComponent
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={setSelectedDate}
-                    initialFocus
-                    className="rounded-md border"
-                  />
-                </PopoverContent>
-              </Popover>
+              <DateRangePicker
+                dateRange={dateRange}
+                onDateRangeChange={setDateRange}
+                className="w-full sm:w-[280px]"
+              />
               
               <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
                 <SelectTrigger className="w-full sm:w-[180px]">
@@ -174,24 +245,16 @@ const Attendance = () => {
               <Filter className="h-4 w-4 mr-2" />
               Filter
             </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="w-full sm:w-auto">
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => handleExport("CSV")}>
-                  <FileText className="h-4 w-4 mr-2" />
-                  Export as CSV
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleExport("PDF")}>
-                  <FileText className="h-4 w-4 mr-2" />
-                  Export as PDF
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full sm:w-auto"
+              onClick={() => setIsExportDialogOpen(true)}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
           </div>
         </div>
 
@@ -212,8 +275,8 @@ const Attendance = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredAttendance.length > 0 ? (
-                filteredAttendance.map((record) => (
+              {paginatedAttendance.length > 0 ? (
+                paginatedAttendance.map((record) => (
                   <TableRow key={record.id}>
                     <TableCell className="font-medium">{record.employeeName}</TableCell>
                     <TableCell>{record.department}</TableCell>
@@ -247,7 +310,65 @@ const Attendance = () => {
             </TableBody>
           </Table>
         </div>
+        
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="py-4 px-2">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                  />
+                </PaginationItem>
+                
+                {Array.from({ length: Math.min(totalPages, 5) }).map((_, index) => {
+                  // Show pagination logic: show first, last, and pages around current
+                  let pageNum = index + 1;
+                  if (totalPages > 5) {
+                    if (currentPage <= 3) {
+                      pageNum = index + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + index;
+                    } else {
+                      pageNum = currentPage - 2 + index;
+                    }
+                  }
+                  
+                  return (
+                    <PaginationItem key={pageNum}>
+                      <PaginationLink
+                        isActive={currentPage === pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                      >
+                        {pageNum}
+                      </PaginationLink>
+                    </PaginationItem>
+                  );
+                })}
+                
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        )}
       </div>
+
+      {/* Export Dialog */}
+      <ExportDialog
+        isOpen={isExportDialogOpen}
+        onClose={() => setIsExportDialogOpen(false)}
+        onExport={handleExport}
+        departments={departments}
+        designations={designations}
+        title="Export Attendance Data"
+      />
     </MainLayout>
   );
 };

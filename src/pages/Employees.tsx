@@ -1,11 +1,10 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, UserPlus, Edit, Trash, Filter, Download, FileText } from "lucide-react";
+import { Search, UserPlus, Edit, Trash, Filter, Download } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -33,10 +32,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { employeeService } from "@/api/services";
 import { Employee } from "@/api/repositories/employee.repository";
 import { EmployeeForm } from "@/components/employee/EmployeeForm";
 import { DeleteEmployeeDialog } from "@/components/employee/DeleteEmployeeDialog";
+import { ExportDialog, ExportFilters } from "@/components/common/ExportDialog";
+import { exportToExcel, formatDateRange } from "@/lib/export-utils";
+import { DateRange } from "react-day-picker";
+import { format } from "date-fns";
+
+const ITEMS_PER_PAGE = 10;
 
 const Employees = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -45,7 +58,9 @@ const Employees = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Fetch employees data
   const { data: employees = [], refetch } = useQuery({
@@ -70,6 +85,13 @@ const Employees = () => {
     
     return matchesSearch && matchesDepartment && matchesPosition;
   });
+  
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filteredEmployees.length / ITEMS_PER_PAGE));
+  const paginatedEmployees = filteredEmployees.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   const handleAddEmployee = () => {
     setIsAddDialogOpen(true);
@@ -85,7 +107,47 @@ const Employees = () => {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleExport = (type: string) => {
+  const handleExport = (filters: ExportFilters) => {
+    // Filter data according to export filters
+    const dataToExport = employees.filter((employee) => {
+      // For employees, we'll use the date range as a filter on their join date if it exists
+      // This is just a placeholder implementation - modify as needed based on actual data model
+      const matchesDateRange = true; // No date field in employee data in this example
+      
+      const matchesDepartment = filters.department
+        ? employee.department === filters.department
+        : true;
+        
+      const matchesDesignation = filters.designation
+        ? employee.position === filters.designation
+        : true;
+      
+      return matchesDateRange && matchesDepartment && matchesDesignation;
+    });
+    
+    // Define headers and row mapping for Excel export
+    const headers = ["Name", "Email", "Phone", "Position", "Department", "Status"];
+    
+    const rowMapper = (employee: Employee) => [
+      employee.name,
+      employee.email,
+      employee.phone,
+      employee.position,
+      employee.department,
+      employee.status === 'active' ? 'Active' : 'Inactive'
+    ];
+
+    // Generate filename with filters info
+    const dateInfo = formatDateRange(filters.dateRange);
+    const deptInfo = filters.department || "all-departments";
+    const filename = `employees_data_${dateInfo}_${deptInfo}`;
+    
+    // Export to Excel
+    exportToExcel(dataToExport, headers, rowMapper, filename);
+  };
+
+  // Legacy CSV export (keeping for backward compatibility)
+  const handleLegacyExport = (type: string) => {
     const filename = `employees_data_${new Date().toISOString().split('T')[0]}`;
     
     if (type === "CSV") {
@@ -208,24 +270,14 @@ const Employees = () => {
               </DropdownMenuContent>
             </DropdownMenu>
             
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => handleExport("CSV")}>
-                  <FileText className="h-4 w-4 mr-2" />
-                  Export as CSV
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleExport("PDF")}>
-                  <FileText className="h-4 w-4 mr-2" />
-                  Export as PDF
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setIsExportDialogOpen(true)}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
           </div>
         </div>
 
@@ -243,8 +295,8 @@ const Employees = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredEmployees.length > 0 ? (
-                filteredEmployees.map((employee) => (
+              {paginatedEmployees.length > 0 ? (
+                paginatedEmployees.map((employee) => (
                   <TableRow key={employee.id}>
                     <TableCell className="font-medium">{employee.name}</TableCell>
                     <TableCell>{employee.email}</TableCell>
@@ -291,6 +343,54 @@ const Employees = () => {
             </TableBody>
           </Table>
         </div>
+        
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="py-4 px-2">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                  />
+                </PaginationItem>
+                
+                {Array.from({ length: Math.min(totalPages, 5) }).map((_, index) => {
+                  // Show pagination logic: show first, last, and pages around current
+                  let pageNum = index + 1;
+                  if (totalPages > 5) {
+                    if (currentPage <= 3) {
+                      pageNum = index + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + index;
+                    } else {
+                      pageNum = currentPage - 2 + index;
+                    }
+                  }
+                  
+                  return (
+                    <PaginationItem key={pageNum}>
+                      <PaginationLink
+                        isActive={currentPage === pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                      >
+                        {pageNum}
+                      </PaginationLink>
+                    </PaginationItem>
+                  );
+                })}
+                
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        )}
       </div>
 
       {/* Add Employee Dialog */}
@@ -343,6 +443,16 @@ const Employees = () => {
           }}
         />
       )}
+      
+      {/* Export Dialog */}
+      <ExportDialog
+        isOpen={isExportDialogOpen}
+        onClose={() => setIsExportDialogOpen(false)}
+        onExport={handleExport}
+        departments={departments}
+        designations={positions}
+        title="Export Employee Data"
+      />
     </MainLayout>
   );
 };
