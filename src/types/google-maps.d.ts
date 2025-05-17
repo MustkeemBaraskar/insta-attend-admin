@@ -43,6 +43,13 @@ declare namespace google {
       constructor(opts?: NavigationControlOptions);
     }
 
+    // Fix the Size class declaration
+    class Size {
+      constructor(width: number, height: number);
+      width: number;
+      height: number;
+    }
+
     interface LatLngLiteral {
       lat: number;
       lng: number;
@@ -76,12 +83,6 @@ declare namespace google {
     interface Icon {
       url: string;
       scaledSize?: Size;
-    }
-
-    interface Size {
-      constructor(width: number, height: number);
-      width: number;
-      height: number;
     }
 
     interface NavigationControlOptions {

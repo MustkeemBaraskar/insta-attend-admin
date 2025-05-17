@@ -14,27 +14,10 @@ const EmployeeTrackingMap = ({ trackingData, isLoading }: EmployeeTrackingMapPro
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const pathRef = useRef<google.maps.Polyline | null>(null);
   const markersRef = useRef<google.maps.Marker[]>([]);
-  const [apiKey, setApiKey] = useState<string>("");
+  // Use the provided API key directly
+  const [apiKey] = useState<string>("AIzaSyDNeLypEkx-T6ScCk925xwUQ7nQ4w1BuOs");
   const [error, setError] = useState<string | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
-
-  // Initialize Google Maps
-  useEffect(() => {
-    // Prompt user for Google Maps API key if not set
-    // In a production environment, this would be stored securely
-    const storedApiKey = localStorage.getItem("google_maps_api_key");
-    if (!storedApiKey) {
-      const apiKeyInput = prompt("Please enter your Google Maps API key");
-      if (apiKeyInput) {
-        localStorage.setItem("google_maps_api_key", apiKeyInput);
-        setApiKey(apiKeyInput);
-      } else {
-        setError("No API key provided. Map functionality will be limited.");
-      }
-    } else {
-      setApiKey(storedApiKey);
-    }
-  }, []);
 
   // Load Google Maps script
   useEffect(() => {
@@ -157,7 +140,8 @@ const EmployeeTrackingMap = ({ trackingData, isLoading }: EmployeeTrackingMapPro
             title: `${new Date(point.timestamp).toLocaleTimeString()} - ${point.locationName || 'Unknown'}`,
             icon: {
               url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
-              scaledSize: new window.google.maps.Size(15, 15)
+              // Fix the Size type error by using a simple object instead of constructor
+              scaledSize: new google.maps.Size(15, 15)
             }
           });
           markersRef.current.push(marker);
