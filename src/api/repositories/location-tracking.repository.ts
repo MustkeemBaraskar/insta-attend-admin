@@ -31,6 +31,8 @@ const generateMockTrackingData = (employeeId: string, date: string): TrackingPoi
   let baseLat = employeeLocations[employeeIndex].lat;
   let baseLng = employeeLocations[employeeIndex].lng;
   
+  console.log(`Generating mock data for employee ${employeeId} at location:`, baseLat, baseLng);
+  
   // Generate tracking points for a typical day (9AM - 5PM)
   const points: TrackingPoint[] = [];
   
@@ -112,11 +114,14 @@ const generateMockTrackingData = (employeeId: string, date: string): TrackingPoi
     });
   }
   
+  console.log(`Generated ${points.length} tracking points for employee ${employeeId}`);
   return points;
 };
 
 export const locationTrackingRepository = {
-  getTrackingData: (employeeId: string, startDate: string, endDate: string) => {
+  getTrackingData: async (employeeId: string, startDate: string, endDate: string) => {
+    console.log(`Fetching tracking data for employee ${employeeId} from ${startDate} to ${endDate}`);
+    
     // Create a range of dates
     const start = new Date(startDate);
     const end = new Date(endDate);
@@ -127,12 +132,14 @@ export const locationTrackingRepository = {
       dates.push(new Date(dt).toISOString().split('T')[0]);
     }
     
+    console.log(`Generating data for ${dates.length} days:`, dates);
+    
     // Generate mock data for each date
     const allData = dates.flatMap(date => generateMockTrackingData(employeeId, date));
+    
+    console.log(`Returning ${allData.length} total tracking points`);
     
     // Return as mock API response
     return Promise.resolve({ data: allData });
   },
-  
-  // Other repository methods would go here
 };

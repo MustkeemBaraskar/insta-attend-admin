@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import EmployeeTrackingMap from "@/components/tracking/EmployeeTrackingMap";
 import { useQuery } from "@tanstack/react-query";
 import { locationTrackingService } from "@/api/services/location-tracking.service";
+import { toast } from "sonner";
 
 const MapTracking = () => {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("");
@@ -18,33 +19,48 @@ const MapTracking = () => {
     to: new Date(),
   });
 
-  const { data: employees = [] } = useQuery({
+  const { data: employees = [], isLoading: isLoadingEmployees } = useQuery({
     queryKey: ["employees"],
     queryFn: async () => {
+      console.log("Fetching employee list");
       return await locationTrackingService.getEmployeeList();
     },
   });
 
-  const { data: trackingData = [], isLoading } = useQuery({
-    queryKey: ["tracking-data", selectedEmployeeId, dateRange],
+  const { data: trackingData = [], isLoading: isLoadingTrackingData } = useQuery({
+    queryKey: ["tracking-data", selectedEmployeeId, dateRange?.from, dateRange?.to],
     queryFn: async () => {
-      if (!selectedEmployeeId || !dateRange?.from) return [];
+      if (!selectedEmployeeId || !dateRange?.from) {
+        console.log("Missing employee ID or date range");
+        return [];
+      }
       
       const formattedStartDate = format(dateRange.from, "yyyy-MM-dd");
       const formattedEndDate = dateRange.to 
         ? format(dateRange.to, "yyyy-MM-dd") 
         : formattedStartDate;
+      
+      console.log(`Fetching tracking data for employee ${selectedEmployeeId} from ${formattedStartDate} to ${formattedEndDate}`);
         
-      return await locationTrackingService.getEmployeeTrackingData(
-        selectedEmployeeId,
-        formattedStartDate,
-        formattedEndDate
-      );
+      try {
+        const data = await locationTrackingService.getEmployeeTrackingData(
+          selectedEmployeeId,
+          formattedStartDate,
+          formattedEndDate
+        );
+        console.log(`Received ${data.length} tracking points`);
+        return data;
+      } catch (error) {
+        console.error("Error fetching tracking data:", error);
+        toast.error("Failed to load tracking data");
+        return [];
+      }
     },
     enabled: !!selectedEmployeeId && !!dateRange?.from,
   });
 
   const handleEmployeeChange = (value: string) => {
+    console.log(`Selected employee: ${value}`);
     setSelectedEmployeeId(value);
   };
 
@@ -99,7 +115,7 @@ const MapTracking = () => {
               <div className="h-[600px] w-full">
                 <EmployeeTrackingMap 
                   trackingData={trackingData} 
-                  isLoading={isLoading}
+                  isLoading={isLoadingTrackingData}
                 />
               </div>
             </CardContent>

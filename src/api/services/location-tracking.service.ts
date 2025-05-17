@@ -14,9 +14,11 @@ const mockEmployees = [
 export const locationTrackingService = {
   getEmployeeList: async () => {
     try {
+      console.log("Returning mock employee list");
       // Return mock employee list for dropdown selection
       return mockEmployees;
     } catch (error) {
+      console.error("Error in getEmployeeList:", error);
       toast.error('Failed to fetch employee list.');
       return [];
     }
@@ -24,12 +26,16 @@ export const locationTrackingService = {
   
   getEmployeeTrackingData: async (employeeId: string, startDate: string, endDate: string) => {
     try {
+      console.log(`Service: Getting tracking data for employee ${employeeId} from ${startDate} to ${endDate}`);
+      
       // Use repository to fetch tracking data
       const response = await locationTrackingRepository.getTrackingData(employeeId, startDate, endDate);
+      
+      console.log(`Service: Received ${response.data.length} tracking points`);
       return response.data;
     } catch (error) {
-      toast.error('Failed to fetch tracking data.');
       console.error('Error fetching tracking data:', error);
+      toast.error('Failed to fetch tracking data.');
       return [];
     }
   }
