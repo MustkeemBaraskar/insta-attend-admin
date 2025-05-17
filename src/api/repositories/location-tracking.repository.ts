@@ -1,3 +1,4 @@
+
 import { apiClient } from '../apiClient';
 import { apiUrl } from '../apiUrl';
 
@@ -11,18 +12,24 @@ export interface TrackingPoint {
   activity?: string;
 }
 
-// Mock data for location tracking
+// Enhanced mock data for location tracking with more variation
 const generateMockTrackingData = (employeeId: string, date: string): TrackingPoint[] => {
   const baseDate = new Date(date);
   
   // Define base coordinates near a city center and create variations
-  let baseLat = 40.7128; // NYC latitude
-  let baseLng = -74.0060; // NYC longitude
+  // Each employee will have a different starting location
+  const employeeLocations = [
+    { lat: 40.7128, lng: -74.0060 }, // NYC
+    { lat: 34.0522, lng: -118.2437 }, // Los Angeles
+    { lat: 41.8781, lng: -87.6298 }, // Chicago
+    { lat: 37.7749, lng: -122.4194 }, // San Francisco
+    { lat: 42.3601, lng: -71.0589 }, // Boston
+  ];
   
-  // Random starting variation to make different employees have different base locations
-  const employeeOffset = parseInt(employeeId) || 1;
-  baseLat += (employeeOffset * 0.01);
-  baseLng -= (employeeOffset * 0.01);
+  // Get base location for this employee
+  const employeeIndex = parseInt(employeeId) % employeeLocations.length;
+  let baseLat = employeeLocations[employeeIndex].lat;
+  let baseLng = employeeLocations[employeeIndex].lng;
   
   // Generate tracking points for a typical day (9AM - 5PM)
   const points: TrackingPoint[] = [];

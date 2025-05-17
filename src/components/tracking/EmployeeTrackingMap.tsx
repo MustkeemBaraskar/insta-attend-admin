@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
@@ -14,21 +13,19 @@ const EmployeeTrackingMap = ({ trackingData, isLoading }: EmployeeTrackingMapPro
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const pathRef = useRef<google.maps.Polyline | null>(null);
   const markersRef = useRef<google.maps.Marker[]>([]);
-  // Use the provided API key directly
-  const [apiKey] = useState<string>("AIzaSyDNeLypEkx-T6ScCk925xwUQ7nQ4w1BuOs");
+  // Hardcode the API key to avoid prompts
+  const apiKey = "AIzaSyDNeLypEkx-T6ScCk925xwUQ7nQ4w1BuOs";
   const [error, setError] = useState<string | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
 
   // Load Google Maps script
   useEffect(() => {
-    if (!apiKey) return;
-    
     const googleMapsScript = document.getElementById('google-maps-script');
     
     if (!googleMapsScript) {
       const script = document.createElement('script');
       script.id = 'google-maps-script';
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=geometry`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=geometry&loading=async`;
       script.async = true;
       script.defer = true;
       script.onload = () => setMapLoaded(true);
@@ -113,7 +110,7 @@ const EmployeeTrackingMap = ({ trackingData, isLoading }: EmployeeTrackingMapPro
       // Add markers for start and end points
       const startMarker = new window.google.maps.Marker({
         position: path[0],
-        map,
+        map: mapInstanceRef.current,
         title: `Start: ${new Date(sortedData[0].timestamp).toLocaleTimeString()}`,
         icon: {
           url: "http://maps.google.com/mapfiles/ms/icons/green-dot.png"
@@ -122,7 +119,7 @@ const EmployeeTrackingMap = ({ trackingData, isLoading }: EmployeeTrackingMapPro
       
       const endMarker = new window.google.maps.Marker({
         position: path[path.length - 1],
-        map,
+        map: mapInstanceRef.current,
         title: `End: ${new Date(sortedData[sortedData.length - 1].timestamp).toLocaleTimeString()}`,
         icon: {
           url: "http://maps.google.com/mapfiles/ms/icons/red-dot.png"
@@ -136,11 +133,10 @@ const EmployeeTrackingMap = ({ trackingData, isLoading }: EmployeeTrackingMapPro
         if (index !== 0 && index !== sortedData.length - 1) {
           const marker = new window.google.maps.Marker({
             position: { lat: point.latitude, lng: point.longitude },
-            map,
+            map: mapInstanceRef.current,
             title: `${new Date(point.timestamp).toLocaleTimeString()} - ${point.locationName || 'Unknown'}`,
             icon: {
               url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
-              // Fix the Size type error by using a simple object instead of constructor
               scaledSize: new google.maps.Size(15, 15)
             }
           });
@@ -151,7 +147,7 @@ const EmployeeTrackingMap = ({ trackingData, isLoading }: EmployeeTrackingMapPro
       // Fit bounds to include all points
       const bounds = new window.google.maps.LatLngBounds();
       path.forEach(point => bounds.extend(point));
-      map.fitBounds(bounds);
+      mapInstanceRef.current.fitBounds(bounds);
     }
   }, [trackingData, mapLoaded]);
 
