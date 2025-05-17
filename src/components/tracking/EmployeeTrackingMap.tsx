@@ -40,8 +40,11 @@ const EmployeeTrackingMap = ({ trackingData, isLoading }: EmployeeTrackingMapPro
   useEffect(() => {
     if (!apiKey) return;
     
-    if (!window.google) {
+    const googleMapsScript = document.getElementById('google-maps-script');
+    
+    if (!googleMapsScript) {
       const script = document.createElement('script');
+      script.id = 'google-maps-script';
       script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=geometry`;
       script.async = true;
       script.defer = true;
@@ -50,7 +53,10 @@ const EmployeeTrackingMap = ({ trackingData, isLoading }: EmployeeTrackingMapPro
       document.head.appendChild(script);
       
       return () => {
-        document.head.removeChild(script);
+        const scriptToRemove = document.getElementById('google-maps-script');
+        if (scriptToRemove) {
+          document.head.removeChild(scriptToRemove);
+        }
       };
     } else {
       setMapLoaded(true);
@@ -59,7 +65,7 @@ const EmployeeTrackingMap = ({ trackingData, isLoading }: EmployeeTrackingMapPro
 
   // Initialize map when DOM is ready and script is loaded
   useEffect(() => {
-    if (!mapLoaded || !mapRef.current) return;
+    if (!mapLoaded || !mapRef.current || !window.google) return;
     
     try {
       mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
@@ -88,7 +94,7 @@ const EmployeeTrackingMap = ({ trackingData, isLoading }: EmployeeTrackingMapPro
 
   // Update map with tracking data
   useEffect(() => {
-    if (!mapLoaded || !mapInstanceRef.current || !trackingData.length) return;
+    if (!mapLoaded || !mapInstanceRef.current || !trackingData.length || !window.google) return;
 
     const map = mapInstanceRef.current;
     
