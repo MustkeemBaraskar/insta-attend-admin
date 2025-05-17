@@ -12,6 +12,7 @@ import Attendance from "./pages/Attendance";
 import Payroll from "./pages/Payroll";
 import Leave from "./pages/Leave";
 import Settings from "./pages/Settings";
+import MapTracking from "./pages/MapTracking";
 import NotFound from "./pages/NotFound";
 import { authService } from "./api/services";
 import { useEffect } from "react";
@@ -53,6 +54,7 @@ const App = () => {
             <Route path="/attendance" element={<ProtectedRoute><Attendance /></ProtectedRoute>} />
             <Route path="/payroll" element={<ProtectedRoute><Payroll /></ProtectedRoute>} />
             <Route path="/leave" element={<ProtectedRoute><Leave /></ProtectedRoute>} />
+            <Route path="/map-tracking" element={<ProtectedRoute><MapTracking /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

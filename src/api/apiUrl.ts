@@ -49,5 +49,9 @@ export const apiUrl = {
     getByEmployeeId: (id: string) => `/payroll/employee/${id}`,
     downloadPayslip: (id: string) => `/payroll/${id}/download`,
   },
+  
+  // Location tracking endpoints
+  tracking: {
+    getTrackingData: `/tracking/employee`,
+  }
 };
-

@@ -7,7 +7,8 @@ import {
   FileText,
   Clock,
   Settings,
-  GridIcon
+  GridIcon,
+  MapPin
 } from "lucide-react";
 import { useLocation } from "react-router-dom";
 
@@ -25,6 +26,7 @@ const Sidebar = ({ collapsed, onToggle }: SidebarProps) => {
     { name: "Attendance", icon: Clock, path: "/attendance" },
     { name: "Payroll", icon: FileText, path: "/payroll" },
     { name: "Leave", icon: Calendar, path: "/leave" },
+    { name: "Location Tracking", icon: MapPin, path: "/map-tracking" },
     { name: "Settings", icon: Settings, path: "/settings" },
   ];
 
